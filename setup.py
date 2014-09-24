@@ -21,19 +21,20 @@ def package_data(pkg, roots):
 
 
 setup(
-    name='ifmo_xblock_crosscheck-xblock',
+    name='ifmo-crosscheck-xblock',
     version='0.1',
     description='ifmo_xblock_crosscheck XBlock',   # TODO: write a better description.
     packages=[
-        'ifmo_xblock_crosscheck',
+        'ifmo_crosscheck',
     ],
     install_requires=[
         'XBlock',
     ],
     entry_points={
         'xblock.v1': [
-            'ifmo_xblock_crosscheck = ifmo_xblock_crosscheck:CrossCheckXBlock',
+            'ifmo_crosscheck_collector = ifmo_crosscheck:CrossCheckCollectorXBlock',
+            'ifmo_crosscheck_grader = ifmo_crosscheck:CrossCheckGraderXBlock',
         ]
     },
-    package_data=package_data("ifmo_xblock_crosscheck", ["static", "public"]),
+    package_data=package_data("ifmo_crosscheck", ["static", "public"]),
 )

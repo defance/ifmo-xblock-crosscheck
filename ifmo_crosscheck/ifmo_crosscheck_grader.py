@@ -3,11 +3,11 @@
 import pkg_resources
 
 from xblock.core import XBlock
-from xblock.fields import Scope, Integer
+from xblock.fields import Scope, Integer, String
 from xblock.fragment import Fragment
 
 
-class CrossCheckXBlock(XBlock):
+class CrossCheckGraderXBlock(XBlock):
     """
     TO-DO: document what your XBlock does.
     """
@@ -19,6 +19,12 @@ class CrossCheckXBlock(XBlock):
     count = Integer(
         default=0, scope=Scope.user_state,
         help="A simple counter, to show something happening",
+    )
+
+    display_name = String(
+        default='[Crosscheck] Grader', scope=Scope.settings,
+        help="This name appears in the horizontal navigation at the top of "
+             "the page."
     )
 
     def resource_string(self, path):
