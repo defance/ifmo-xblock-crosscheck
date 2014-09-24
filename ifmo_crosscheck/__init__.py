@@ -1,2 +1,2 @@
-from .ifmo_crosscheck_collector import CrossCheckXBlock
-from .ifmo_xblock_crosscheck_2 import CrossCheckXBlockNew
+from .ifmo_crosscheck_collector import CrossCheckCollectorXBlock
+from .ifmo_crosscheck_grader import CrossCheckGraderXBlock
