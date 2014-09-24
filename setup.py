@@ -1,33 +1,39 @@
+"""Setup for ifmo_xblock_crosscheck XBlock."""
+
 import os
 from setuptools import setup
 
-README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 
-# allow setup.py to be run from any path
-os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+def package_data(pkg, roots):
+    """Generic function to find package_data.
+
+    All of the files under each of the `roots` will be declared as package
+    data for package `pkg`.
+
+    """
+    data = []
+    for root in roots:
+        for dirname, _, files in os.walk(os.path.join(pkg, root)):
+            for fname in files:
+                data.append(os.path.relpath(os.path.join(dirname, fname), pkg))
+
+    return {pkg: data}
+
 
 setup(
-    name='edx-ifmo-xblock-crosscheck',
+    name='ifmo_xblock_crosscheck-xblock',
     version='0.1',
+    description='ifmo_xblock_crosscheck XBlock',   # TODO: write a better description.
+    packages=[
+        'ifmo_xblock_crosscheck',
+    ],
     install_requires=[
-        'django',
+        'XBlock',
     ],
-    packages=['ifmo_xblock_crosscheck'],
-    include_package_data=True,
-    license='BSD License',
-    description='Package provides ifmo crosscheck xblock.',
-    long_description=README,
-    url='http://www.de.ifmo.ru/',
-    author='Dmitry Ivanyushin',
-    author_email='d.ivanyushin@cde.ifmo.ru',
-    classifiers=[
-        'Environment :: Web Environment',
-        'Framework :: Django',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License', 
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
-        'Topic :: Internet :: WWW/HTTP',
-    ],
+    entry_points={
+        'xblock.v1': [
+            'ifmo_xblock_crosscheck = ifmo_xblock_crosscheck:CrossCheckXBlock',
+        ]
+    },
+    package_data=package_data("ifmo_xblock_crosscheck", ["static", "public"]),
 )
