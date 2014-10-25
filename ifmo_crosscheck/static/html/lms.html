@@ -1,0 +1,124 @@
+<div class="crosscheck-block" data-state="{{ state }}">
+
+    <p>This is <b>collection</b> student view</p>
+
+    <pre style="border: 1px solid #000000">{{state}}</pre>
+
+    <!-- Get random submission -->
+    <script  type="text/template" id="crosscheck-message">
+        <div class="<%= message_type %>">
+            <p><%= message_text %></p>
+        </div>
+    </script>
+
+    <!-- Detailed info about latest uploaded file -->
+    <script  type="text/template" id="crosscheck-upload-info">
+        <div class="file-info">
+            You have uploaded the following file: <br/>
+            File name: <b><a href="<%= download_uploaded %>"><%= uploaded_filename %></a></b>
+        </div>
+    </script>
+
+    <!-- Detailed info when there is no file -->
+    <script  type="text/template" id="crosscheck-upload-info-empty">
+        <div>
+            <p>You have not uploaded any solution yet.</p>
+        </div>
+    </script>
+
+    <!-- Simple form to upload file -->
+    <script  type="text/template" id="crosscheck-upload-template">
+        <div style="color: green">
+            <p>You can now upload file</p>
+        </div>
+        <div class="upload"></div>
+    </script>
+
+    <!-- Default button to select file -->
+    <script type="text/template" id="crosscheck-upload-input">
+        <div class="button upload_input">
+            <span>Choose file</span>
+            <input class="file_upload" type="file" name="assignment"/>
+        </div>
+    </script>
+
+    <!-- UI to uploaded recently selected file -->
+    <script type="text/template" id="crosscheck-upload-selected">
+        <button class="button upload_another">Select another file</button>
+        <button class="button button-highlighted upload_do">Upload <%= filename %></button>
+    </script>
+
+    <!-- Submission has been approved -->
+    <script  type="text/template" id="crosscheck-upload-approve">
+        <div>
+            <button class="button upload_approve">Send to peers</button>
+        </div>
+    </script>
+
+    <!-- Submission has been approved -->
+    <script  type="text/template" id="crosscheck-upload-approved">
+        <div>
+            <p>You have approved your submission. It will be graded soon.</p>
+        </div>
+    </script>
+
+    <!-- Detailed info when there is no file -->
+    <script  type="text/template" id="crosscheck-grading-empty">
+        <div>
+            <p>You have not uploaded so it won't be graded.</p>
+        </div>
+    </script>
+
+    <!-- Get random submission -->
+    <script  type="text/template" id="crosscheck-grading-select">
+        <div>
+            <p>You can now get a submission for grading.</p>
+            <p><button class="button button-highlighted roll-btn">Get submission</button></p>
+        </div>
+    </script>
+
+    <!-- Get random submission -->
+    <script  type="text/template" id="crosscheck-temp">
+        <div>
+            <p><input class="file_upload fu" type="file" name="assignment"/></p>
+        </div>
+    </script>
+
+    <!--<input class="file_upload fu" type="file" name="assignment"/>-->
+
+    {% if is_collection_phase %}
+
+        {% if not sent_to_peers %}
+
+
+
+
+        {% else %}
+            <!--Your file is being graded-->
+        {% endif %}
+
+    {% endif %}
+
+    {% if grading_allowed %}
+
+        {% if sent_to_peers %}
+            <!--Grade others-->
+        {% else %}
+            <!--Unable to grade others, because have no submission.-->
+        {% endif %}
+
+    {% endif %}
+
+    {% if not is_collection_phase and not grading_allowed %}
+
+        {% if sent_to_peers %}
+            <!--Own scores-->
+        {% else %}
+            <!--Nothing to show-->
+        {% endif %}
+
+    {% endif %}
+
+    <div id="crosscheck-content"></div>
+
+</div>

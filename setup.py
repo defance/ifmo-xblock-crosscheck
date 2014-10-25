@@ -28,7 +28,7 @@ setup(
         'ifmo_crosscheck',
     ],
     install_requires=[
-        'XBlock',
+        'XBlock', 'django'
     ],
     entry_points={
         'xblock.v1': [

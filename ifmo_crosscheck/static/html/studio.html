@@ -1,0 +1,22 @@
+<section class="ifmo-crosscheck-edit">
+    <div class="container">
+
+        <form>
+            <fieldset>
+
+                {% for field, value, validator in fields %}
+                <div class="control-group">
+                    <label class="control-label" for="{{ field.name }}_input">{{ field.display_name}}</label>
+                    <div class="controls">
+                        <input id="{{ field.name }}_input" name="{{ field.name }}" class="input" type="text" placeholder="{{ field.default }}" value="{{ value }}" data-validator="{{ validator }}" />
+                        <p class="help-block">{{ field.help }}</p>
+                    </div>
+                </div>
+                <hr/>
+                {% endfor %}
+
+            </fieldset>
+        </form>
+
+    </div>
+</section>
