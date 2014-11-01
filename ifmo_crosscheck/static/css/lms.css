@@ -64,4 +64,88 @@
     border-radius: 3px;
     background-color: #f8f8f8;
     padding: 10px;
+    margin: 5px 0;
+}
+
+.crosscheck-block .crosscheck-message {
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 10px;
+    margin: 5px 0;
+}
+
+.crosscheck-block .crosscheck-message p {
+    margin: 0 !important;
+}
+
+.crosscheck-block div.message-error {
+    border-color: #c0392b;
+    background-color: #e74c3c;
+}
+
+.crosscheck-block div.message-info {
+    border-color: green;
+    background-color: lightgreen;
+}
+
+.crosscheck-block div.message-hint {
+    border-color: darkorange;
+    background-color: lightyellow;
+    color: #000;
+}
+
+.crosscheck-block div.message-error p {
+    color: white;
+}
+
+.crosscheck-block .upload_controllers {
+    margin: 10px 0;
+}
+
+.crosscheck-block .grading-form {
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #f8f8f8;
+    padding: 10px;
+    margin: 5px 0;
+}
+
+.crosscheck-block .grading-form .enter-grade-form-field {
+    display: inline-block;
+    margin: 5px;
+}
+
+.crosscheck-block .grading-form .enter-grade-form-field-name {
+    width: 100px;
+}
+
+.crosscheck-block .grading-form .enter-grade-form-field-value {
+    width: 500px;
+}
+
+.crosscheck-block .task_text {
+    margin-bottom: 20px;
+}
+
+.crosscheck-block .task_criteria {
+    margin-bottom: 20px;
+}
+
+.crosscheck-block .task_criteria ul { margin: 0.5em; }
+.crosscheck-block .task_criteria li { margin-bottom: 0 !important; }
+
+.crosscheck-block .problem-header {
+    display: inline-block;
+}
+
+.crosscheck-block .problem-progress {
+    display: inline-block;
+    padding-left: 5px;
+    color: #666;
+    font-weight: 100;
+    font-size: 1em;
+}
+
+.crosscheck-block .grade-form-message {
+    display: none;
 }

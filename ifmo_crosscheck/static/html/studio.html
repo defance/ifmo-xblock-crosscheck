@@ -15,6 +15,24 @@
                 <hr/>
                 {% endfor %}
 
+                <div class="control-group">
+                    <label class="control-label" for="task_text_input">Task text</label>
+                    <div class="controls">
+                        <p class="help-block">Text will be shown to students while this module is open.</p>
+                        <textarea id="task_text_input" name="task_text" class="input" style="width: 100%; height: auto" rows="10">{{ extra_fields.task_text }}</textarea>
+                    </div>
+                </div>
+                <hr/>
+
+                <div class="control-group">
+                    <label class="control-label" for="task_criteria_input">Task criteria</label>
+                    <div class="controls">
+                        <p class="help-block">These criteria will be shown to peer when grading one's submission.</p>
+                        <textarea id="task_criteria_input" name="task_criteria" class="input" style="width: 100%; height: auto" rows="10">{{ extra_fields.task_criteria }}</textarea>
+                    </div>
+                </div>
+                <hr/>
+
             </fieldset>
         </form>
 

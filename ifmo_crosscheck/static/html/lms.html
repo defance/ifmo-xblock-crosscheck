@@ -1,37 +1,134 @@
-<div class="crosscheck-block" data-state="{{ state }}">
+<div class="crosscheck-block" id="crosscheck-block" data-state="{{ state }}" data-max_score="{{ max_score }}">
 
-    <p>This is <b>collection</b> student view</p>
+    <h2 class="problem-header">{{ display_name }}</h2>
 
-    <pre style="border: 1px solid #000000">{{state}}</pre>
+    <div class="problem-progress"></div>
 
-    <!-- Get random submission -->
-    <script  type="text/template" id="crosscheck-message">
-        <div class="<%= message_type %>">
-            <p><%= message_text %></p>
-        </div>
-    </script>
+    <div class="task_text">
+        {{ task.text|safe }}
+    </div>
 
-    <!-- Detailed info about latest uploaded file -->
-    <script  type="text/template" id="crosscheck-upload-info">
-        <div class="file-info">
-            You have uploaded the following file: <br/>
-            File name: <b><a href="<%= download_uploaded %>"><%= uploaded_filename %></a></b>
-        </div>
-    </script>
+    <div class="crosscheck-message">
+        <pre>{{state}}</pre>
+    </div>
 
-    <!-- Detailed info when there is no file -->
-    <script  type="text/template" id="crosscheck-upload-info-empty">
-        <div>
-            <p>You have not uploaded any solution yet.</p>
-        </div>
-    </script>
+    <script type="text/template" id="crosscheck-template">
 
-    <!-- Simple form to upload file -->
-    <script  type="text/template" id="crosscheck-upload-template">
-        <div style="color: green">
-            <p>You can now upload file</p>
-        </div>
-        <div class="upload"></div>
+        <% if (message) { %>
+            <div class="crosscheck-message message-<%= message.message_type %>">
+                <p><%= message.message_text %></p>
+            </div>
+        <% } %>
+
+        <% if (uploaded) { %>
+            <div class="file-info">
+                You have uploaded the following file: <br/>
+                File name: <b><a href="<%= uploaded.url %>"><%= uploaded.filename %></a></b>
+            </div>
+        <% } %>
+
+        <% if (is_upload_allowed) { %>
+
+            <% if (!uploaded) { %>
+                <div class="crosscheck-message message-hint">
+                    <p>Please upload your solution using buttons below.</p>
+                </div>
+            <% } %>
+
+            <% if (!uploaded || !uploaded.approved) { %>
+                <div class="controllers">
+                    <div class="upload"></div>
+                    <% if (uploaded) { %>
+                        <button class="button upload_approve" data-in-progress="Sending to peers...">Send to peers</button>
+                    <% } %>
+                </div>
+            <% } %>
+
+            <% if (uploaded && uploaded.approved) { %>
+                <% if (score && score.passed) { %>
+                    <div class="crosscheck-message">
+                        <h3>You received following reviews for your submission</h3>
+                        {% for review in reviews %}
+                            <div class="crosscheck-message">
+                                <p><b>Score:</b> {{ review.score }}</p>
+                                <p><b>Comment:</b> {{ review.comment|linebreaksbr }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                <% } else { %>
+                    <div class="crosscheck-message message-hint">
+                        <p>You have approved your submission. It will be graded soon.</p>
+                    </div>
+                <% } %>
+            <% } %>
+
+        <% } %>
+
+        <% if (is_grading_allowed) { %>
+
+            <% if (uploaded && uploaded.approved || is_staff) { %>
+
+                <% if (rolled) { %>
+
+                    <div class="grading-form">
+                        <p>
+                            You are now grading submission <a href="<%= rolled.file_url %>"><%= rolled.filename %></a>. Please follow criteria below.
+                        </p>
+
+                        <div class="task_criteria">
+                            {{ task.criteria|safe }}
+                        </div>
+
+                        <div class="crosscheck-message message-error grade-form-message"></div>
+
+                        <form id="enter-grade-form">
+                            <div>
+                                <div class="enter-grade-form-field enter-grade-form-field-name">
+                                    <span>Grade: </span>
+                                </div>
+                                <div class="enter-grade-form-field enter-grade-form-field-value">
+                                    <input id="grade-input" name="grade"/>&nbsp;&nbsp;<span>(Max: <b>{{ max_score }})</b></span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="enter-grade-form-field enter-grade-form-field-name">
+                                    <span>Comment: </span>
+                                </div>
+                                <div class="enter-grade-form-field enter-grade-form-field-value">
+                                    <textarea id="comment-input" name="comment" rows="4" style="width: 100%; height: auto;"></textarea>
+                                </div>
+                            </div>
+                            <div class="controllers">
+                                <button type="submit" class="button button-highlighted">Grade</button>
+                            </div>
+                        </form>
+                    </div>
+
+
+                <% } else { %>
+                    <div class="crosscheck-message message-hint">
+                        <%
+                            extra_message = '';
+                            grades_to_go = score.need_grades - score.own_grades;
+                            if (grades_to_go > 0) {
+                                extra_message = 'You need to grade <b>' + grades_to_go + '</b> more submission(s) before your score can be published.'
+                            }
+                        %>
+                        <p>You can now get a submission for grading. <%= extra_message %></p>
+                    </div>
+                    <div class="controllers">
+                        <button class="button button-highlighted roll_btn" data-in-progress="Getting submission...">Get submission</button>
+                    </div>
+                <% } %>
+
+             <% } else { %>
+                <div class="crosscheck-message message-hint">
+                    <p>You have not uploaded so it won't be graded.</p>
+                </div>
+             <% } %>
+
+        <% } %>
+
     </script>
 
     <!-- Default button to select file -->
@@ -45,79 +142,8 @@
     <!-- UI to uploaded recently selected file -->
     <script type="text/template" id="crosscheck-upload-selected">
         <button class="button upload_another">Select another file</button>
-        <button class="button button-highlighted upload_do">Upload <%= filename %></button>
+        <button class="button button-highlighted upload_do" data-in-progress="Uploading... ">Upload <%= filename %></button>
     </script>
-
-    <!-- Submission has been approved -->
-    <script  type="text/template" id="crosscheck-upload-approve">
-        <div>
-            <button class="button upload_approve">Send to peers</button>
-        </div>
-    </script>
-
-    <!-- Submission has been approved -->
-    <script  type="text/template" id="crosscheck-upload-approved">
-        <div>
-            <p>You have approved your submission. It will be graded soon.</p>
-        </div>
-    </script>
-
-    <!-- Detailed info when there is no file -->
-    <script  type="text/template" id="crosscheck-grading-empty">
-        <div>
-            <p>You have not uploaded so it won't be graded.</p>
-        </div>
-    </script>
-
-    <!-- Get random submission -->
-    <script  type="text/template" id="crosscheck-grading-select">
-        <div>
-            <p>You can now get a submission for grading.</p>
-            <p><button class="button button-highlighted roll-btn">Get submission</button></p>
-        </div>
-    </script>
-
-    <!-- Get random submission -->
-    <script  type="text/template" id="crosscheck-temp">
-        <div>
-            <p><input class="file_upload fu" type="file" name="assignment"/></p>
-        </div>
-    </script>
-
-    <!--<input class="file_upload fu" type="file" name="assignment"/>-->
-
-    {% if is_collection_phase %}
-
-        {% if not sent_to_peers %}
-
-
-
-
-        {% else %}
-            <!--Your file is being graded-->
-        {% endif %}
-
-    {% endif %}
-
-    {% if grading_allowed %}
-
-        {% if sent_to_peers %}
-            <!--Grade others-->
-        {% else %}
-            <!--Unable to grade others, because have no submission.-->
-        {% endif %}
-
-    {% endif %}
-
-    {% if not is_collection_phase and not grading_allowed %}
-
-        {% if sent_to_peers %}
-            <!--Own scores-->
-        {% else %}
-            <!--Nothing to show-->
-        {% endif %}
-
-    {% endif %}
 
     <div id="crosscheck-content"></div>
 

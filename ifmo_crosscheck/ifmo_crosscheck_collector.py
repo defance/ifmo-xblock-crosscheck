@@ -1,160 +1,42 @@
 """TO-DO: Write a description of what this XBlock is."""
 
 import datetime
-import hashlib
 import json
 import mimetypes
-import os
 import pkg_resources
 import pytz
+import random
 
+from courseware.models import StudentModule
+from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.files.storage import default_storage
+from django.db.models import Avg, Count, Q
 from django.template import Context, Template
-from functools import partial
+from webob.exc import HTTPNotFound
 from webob.response import Response
 from xblock.core import XBlock
-from xblock.fields import Scope, Integer, String, Float, Boolean, DateTime, Dict
 from xblock.fragment import Fragment
+from xmodule.util.duedate import get_extended_due_date
 
-from .grade_dict import GradeDict
-from .graded_submission import GradedSubmission, GradeInfo
-
-
-class CrosscheckSettingsSaveException(Exception):
-    pass
+from .models import Score, Submission
+from .crosscheck_fields import CrosscheckXBlockFields
+from .utils import CrosscheckSettingsSaveException, ValidationException, download, get_sha1, file_storage_path, now
 
 
-class ValidationException(Exception):
-    pass
-
-
-class CrossCheckCollectorXBlock(XBlock):
+class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
 
     has_score = True
+    always_recalculate_grades = True
     icon_class = 'problem'
-
-    display_name = String(
-        default='[Crosscheck] Collector',
-        help="This name appears in the horizontal navigation at the top of "
-             "the page.",
-        scope=Scope.settings
-    )
-
-    weight = Float(
-        display_name="Problem Weight",
-        help=("Defines the number of points each problem is worth. "
-              "If the value is not set, the problem is worth the sum of the "
-              "option point values."),
-        values={"min": 0, "step": .1},
-        default = 1,
-        scope=Scope.settings
-    )
-
-    points = Float(
-        display_name="Maximum score",
-        help="Maximum grade score given to assignment by staff.",
-        values={"min": 0, "step": .1},
-        default=100,
-        scope=Scope.settings
-    )
-
-    collection_due = DateTime(
-        display_name="Collection due",
-        help="When system should stop collect solutions and start offer grading them (UTC+0). Format: Y-m-d H:M:S",
-        default=datetime.datetime.utcnow().replace(tzinfo=pytz.utc),
-        scope=Scope.settings
-    )
-
-    score = Float(
-        display_name="Grade score",
-        default=None,
-        help="Grade score given to assignment by staff.",
-        values={"min": 0, "step": .1},
-        scope=Scope.user_state
-    )
-
-    is_assignment_approved = Boolean(
-        display_name="Whether student published his solution to peers.",
-        default=False,
-        scope=Scope.user_state
-    )
-
-    score_published = Boolean(
-        display_name="Whether score has been published.",
-        help="This is a terrible hack, an implementation detail.",
-        default=True,
-        scope=Scope.user_state
-    )
-
-    comment = String(
-        display_name="Instructor comment",
-        default='',
-        scope=Scope.user_state,
-        help="Feedback given to student by instructor."
-    )
-
-    is_assignment_uploaded = Boolean(
-        display_name="Uploaded",
-        scope=Scope.user_state,
-        default=False,
-        help="Whether user has uploaded file"
-    )
-
-    uploaded_sha1 = String(
-        display_name="Upload SHA1",
-        scope=Scope.user_state,
-        default=None,
-        help="sha1 of the file uploaded by the student for this assignment."
-    )
-
-    uploaded_filename = String(
-        display_name="Upload file name",
-        scope=Scope.user_state,
-        default=None,
-        help="The name of the file uploaded for this assignment."
-    )
-
-    uploaded_mimetype = String(
-        display_name="Mime type of uploaded file",
-        scope=Scope.user_state,
-        default=None,
-        help="The mimetype of the file uploaded for this assignment."
-    )
-
-    uploaded_timestamp = DateTime(
-        display_name="Timestamp",
-        scope=Scope.user_state,
-        default=None,
-        help="When the file was uploaded"
-    )
-
-    collected_submissions = GradeDict(
-        scope=Scope.settings,
-        default=GradeDict.default(),
-        help="Contains all data, collected and graded. As keys is has number of grades, as "
-    )
-
-    current_rolled_submission = String(
-        display_name="Current submission for grading",
-        scope=Scope.user_state,
-        default=None,
-        help="Link to module"
-    )
-
-    is_grading_debug = String(
-        display_name="Is grading phase",
-        scope=Scope.settings,
-        default=None,
-        help="Debug value"
-    )
 
     DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
     validators = {
         'string': lambda _, x: unicode(x),
         'float': lambda _, x: float(x),
-        'datetime': lambda i, x: i._validate_collection_due(i._str_to_datetime(x))
+        'datetime': lambda i, x: i._validate_collection_due(i._str_to_datetime(x)),
+        'int': lambda _, x: int(x),
     }
 
     filters = {
@@ -165,12 +47,58 @@ class CrossCheckCollectorXBlock(XBlock):
         ('display_name', 'string'),
         ('weight', 'float'),
         ('points', 'float'),
+        ('grades_required', 'int'),
         ('collection_due', 'datetime'),
         ('is_grading_debug', 'string')
     )
 
     def max_score(self):
         return self.points
+
+    def get_score(self):
+
+        # We need to make two aggregate-select to calculate score. Need to find out how to cache it.
+        default_score = {
+            'score': 0,
+            'total': self.weight,
+            'grades': 0,
+            'own_grades': 0,
+            'need_grades': self.grades_required,
+            'passed': False
+        }
+
+        if self.submission is None:
+            return default_score
+
+        own_submission = self._get_submission()
+
+        # Score over user's submission
+        aggregated_score = Score.objects.filter(submission=own_submission) \
+            .aggregate(avg=Avg('score'), count=Count('submission'))
+
+        # Check whether user has graded several submissions himself to get his score
+        aggregated_score_own = Score.objects.filter(
+            user_id=self.scope_ids.user_id,
+            submission__module=own_submission.module,
+            submission__course=own_submission.course
+        ).aggregate(count=Count('submission'))
+
+        # Update data
+        default_score['grades'] = aggregated_score['count']
+        default_score['own_grades'] = aggregated_score_own['count']
+
+        # Submission must be graded several times before score can be published
+        if aggregated_score['count'] < self.grades_required:
+            return default_score
+
+        # User need to grade at least several others' submission before score is published
+        if aggregated_score_own['count'] < self.grades_required:
+            return default_score
+
+        default_score['score'] = (aggregated_score['avg'] / self.points) * self.weight
+        default_score['passed'] = True
+
+        return default_score
 
     @XBlock.json_handler
     def save_settings(self, data, suffix=''):
@@ -182,10 +110,27 @@ class CrossCheckCollectorXBlock(XBlock):
             except Exception as e:
                 raise CrosscheckSettingsSaveException('Error while validating data: %s' % (e.message,))
 
+        self.task_text = data.get('task_text', '')
+        self.task_criteria = data.get('task_criteria', '')
+
     def student_view(self, context=None):
         frag = Fragment()
         context = self.get_state()
         context['state'] = json.dumps(context)
+
+        context.update({
+            'display_name': self.display_name,
+            'task': {
+                'text': self.task_text,
+                'criteria': self.task_criteria
+            },
+            'max_score': self.max_score()
+        })
+
+        # Get reviews
+        if context['score']['passed']:
+            context.update({'reviews': self.get_reviews()})
+
         frag.add_content(render_template("static/html/lms.html", context))
         frag.add_css(resource_string("static/css/lms.css"))
         frag.add_javascript(resource_string("static/js/src/lms.js"))
@@ -193,24 +138,46 @@ class CrossCheckCollectorXBlock(XBlock):
         return frag
 
     def get_state(self):
+
+        submission = self._get_submission()
+
         state = {
-            'upload_allowed': self._upload_allowed(),
-            'is_uploaded': self.is_assignment_uploaded,
-            'is_collection_phase': self._is_collection_step(),
-            'sent_to_peers': self.is_assignment_approved,
-            'is_grading_phase': self._is_grading_step(),
+            'location': unicode(self.location),
+            'is_upload_allowed': self._upload_allowed(),
+            'is_grading_allowed': self._grading_allowed(),
         }
-        if self.is_assignment_uploaded:
+
+        if self.is_course_staff():
+            state['is_staff'] = self.is_course_staff()
+
+        if submission is not None:
+            state.update({'uploaded': {
+                'filename': submission.filename,
+                'timestamp': self._datetime_to_str(submission.modified),
+                'sha1': submission.sha_1,
+                'approved': submission.approved
+            }})
+
+        submission_rolled = self._get_submission(self.submission_rolled)
+        if submission_rolled is not None:
             state.update({
-                'uploaded_filename': self.uploaded_filename,
-                'uploaded_timestamp': self._datetime_to_str(self.uploaded_timestamp),
-                'uploaded_sha1': self.uploaded_sha1,
+                'rolled': {
+                    'filename': submission_rolled.filename,
+                }
             })
-        if self.current_rolled_submission:
-            state.update({
-                'is_selected': True
-            })
+
+        score = self.get_score()
+        state.update({'score': score})
+
         return state
+
+    def get_reviews(self):
+        return [
+            {
+                'score': i['score'],
+                'comment': i['comment']
+            } for i in Score.objects.values('score', 'comment').filter(submission=self._get_submission())
+        ]
 
     @XBlock.handler
     def upload_assignment(self, request, suffix=''):
@@ -219,35 +186,40 @@ class CrossCheckCollectorXBlock(XBlock):
 
         upload = request.params['assignment']
 
-        # Write down old file path to delete it later
-        old_path = _file_storage_path(
-            self.location.to_deprecated_string(),
-            self.uploaded_sha1,
-            self.uploaded_filename
-        ) if self.is_assignment_uploaded else None
+        # Do cleanup first
+        old_submission = self._get_submission()
+        if old_submission is not None:
+            old_path = file_storage_path(
+                self.location.to_deprecated_string(),
+                old_submission.sha_1,
+                old_submission.filename
+            )
+            if default_storage.exists(old_path):
+                default_storage.delete(old_path)
 
-        self.uploaded_sha1 = _get_sha1(upload.file)
-        self.uploaded_filename = upload.file.name
-        self.uploaded_mimetype = mimetypes.guess_type(upload.file.name)[0]
-        self.uploaded_timestamp = _now()
-        path = _file_storage_path(
-            self.location.to_deprecated_string(),
-            self.uploaded_sha1,
-            self.uploaded_filename
+        submission = Submission.objects.create(
+            user=User.objects.get(id=self.scope_ids.user_id),
+            filename=upload.file.name,
+            mimetype=mimetypes.guess_type(upload.file.name)[0],
+            sha_1=get_sha1(upload.file),
+            course=unicode(self.course_id),
+            module=unicode(self.location)
         )
 
-        # Cleanup if everything is ok
-        if old_path is not None and default_storage.exists(old_path):
-            default_storage.delete(old_path)
+        self.submission = submission.id
+
+        path = file_storage_path(
+            self.location.to_deprecated_string(),
+            submission.sha_1,
+            submission.filename
+        )
 
         if not default_storage.exists(path):
             default_storage.save(path, File(upload.file))
 
-        self.is_assignment_uploaded = True
-
         state = self.get_state()
         message = {
-            "message_text": "You file is uploaded",
+            "message_text": "You submission is successfully uploaded.",
             "message_type": "info"
         }
         state.update({"message": message})
@@ -263,12 +235,14 @@ class CrossCheckCollectorXBlock(XBlock):
         """
 
         assert self._is_collection_step()
-        assert self.is_assignment_uploaded
-        assert not self.is_assignment_approved
 
-        submission = GradedSubmission(self.course_id, self.location, self.scope_ids.user_id)
-        self.fields['collected_submissions'].add_submission(submission)
-        self.is_assignment_approved = True
+        submission = self._get_submission()
+
+        assert submission is not None
+        assert not submission.approved
+
+        submission.approved = True
+        submission.save()
 
         return Response(json_body=self.get_state())
 
@@ -276,16 +250,50 @@ class CrossCheckCollectorXBlock(XBlock):
     def roll_submission(self, request, suffix=''):
 
         assert self._is_grading_step()
-        assert self.current_rolled_submission is None
+        # assert self.current_rolled_submission is None
 
-        module = self._roll_submission()
-        self.current_rolled_submission = module
+        rolled_submission = self.submission_rolled
 
-        return Response(json_body=self.get_state())
+        if not rolled_submission:
+            rolled_submission = self._roll_submission()
+            if rolled_submission is not None:
+                self.submission_rolled = rolled_submission.id
+
+        state = self.get_state()
+        if rolled_submission is None:
+            message = {
+                "message_text": "No submission for grading is available. Please try again later.",
+                "message_type": "error"
+            }
+            state.update({"message": message})
+
+        return Response(json_body=state)
 
     def _roll_submission(self):
 
-        return self.fields['collected_submissions'].get_random()
+        user = User.objects.get(id=self.scope_ids.user_id)
+
+        submissions = Submission.objects.filter(
+            ~Q(user=user),
+            module=unicode(self.location),
+            course=unicode(self.course_id),
+            approved=True,
+        ).annotate(num_scores=Count('score')).order_by('num_scores')
+
+        if not submissions.exists():
+            return None
+
+        for i in submissions:
+
+            # Make in random?
+            rolled_submission = i
+
+            # We are okay only with submission that is not scored with current user.
+            # Probably this can be optimized.
+            if not Score.objects.filter(user=user, submission=rolled_submission).exists():
+                return rolled_submission
+
+        return None
 
     def studio_view(self, context=None):
         cls = type(self)
@@ -296,7 +304,11 @@ class CrossCheckCollectorXBlock(XBlock):
             fields += [(getattr(cls, field), _filter(self, getattr(self, field)), field_type)]
 
         context = {
-            'fields': fields
+            'fields': fields,
+            'extra_fields': {
+                'task_text': self.task_text,
+                'task_criteria': self.task_criteria
+            }
         }
         frag = Fragment()
         frag.add_content(render_template("static/html/studio.html", context))
@@ -315,10 +327,10 @@ class CrossCheckCollectorXBlock(XBlock):
         """If collection due is ok, return it otherwise throw exception."""
 
         # Collection due that took place in past can be moved anywhere in past
-        if self.collection_due is not None and self.collection_due < _now():
+        if self.collection_due is not None and self.collection_due < now():
             return a
 
-        if not a > _now():
+        if not a > now():
             raise ValidationException("Collection due must take place in future")
 
         # if not a > self.start:
@@ -333,46 +345,152 @@ class CrossCheckCollectorXBlock(XBlock):
     def _upload_allowed(self):
         return self._is_collection_step()
 
+    def _grading_allowed(self):
+        return self._is_grading_step()
+
     def _is_collection_step(self):
         if self.is_grading_debug == 'True':
             return False
-        return _now() < self.collection_due if self.collection_due else True
+        return now() < self.collection_due if self.collection_due else True
 
     def _is_grading_step(self):
         if self.is_grading_debug == 'True':
             return True
-        _is_step = self.collection_due < _now()
-        if self.due is not None:
-            _is_step &= _now() < self.due
-        return _is_step
+        return not self.past_due() and now() > self.collection_due
+
+    def is_course_staff(self):
+        return getattr(self.xmodule_runtime, 'user_is_staff', False)
+
+    def past_due(self):
+        due = get_extended_due_date(self)
+        if due is not None:
+            return now() > due
+        return False
+
 
     @XBlock.handler
     def download_uploaded(self, request, suffix=''):
-        path = _file_storage_path(
-            self.location.to_deprecated_string(),
-            self.uploaded_sha1,
-            self.uploaded_filename
+
+        submission = self._get_submission()
+
+        if submission is None:
+            return HTTPNotFound()
+
+        path = file_storage_path(
+            unicode(self.location),
+            submission.sha_1,
+            submission.filename
         )
-        return self.download(
+        return download(
             path,
-            self.uploaded_mimetype,
-            self.uploaded_filename
+            submission.mimetype,
+            submission.filename
         )
 
-    def download(self, path, mimetype, filename):
-        block_size = 2**10 * 8  # 8kb
-        downloaded_file = default_storage.open(path)
-        app_iter = iter(partial(downloaded_file.read, block_size), '')
-        return Response(
-            app_iter=app_iter,
-            content_type=mimetype,
-            content_disposition="attachment; filename=" + filename)
+    @XBlock.handler
+    def download_rolled(self, request, suffix=''):
+
+        submission = self._get_submission(self.submission_rolled)
+
+        if submission is None:
+            return HTTPNotFound()
+
+        path = file_storage_path(
+            unicode(self.location),
+            submission.sha_1,
+            submission.filename
+        )
+        return download(
+            path,
+            submission.mimetype,
+            submission.filename
+        )
+
+    @XBlock.handler
+    def grade(self, request, suffix=''):
+
+        assert self._is_grading_step()
+        assert self.submission_rolled is not None
+
+        submission = self._get_submission(self.submission_rolled)
+
+        assert submission is not None
+
+        user = User.objects.get(id=self.scope_ids.user_id)
+
+        try:
+            score = Score.objects.get(user=user, submission=submission)
+        except Score.DoesNotExist:
+            score = None
+
+        # TODO: Protect passed params
+        if score is None:
+            score = Score.objects.create(
+                user=user,
+                comment=request.params.get('comment', ''),
+                score=request.params.get('grade', 0),
+                submission=submission
+            )
+        else:
+            score.comment = request.params.get('comment', '')
+            score.score = request.params.get('score', 0)
+            score.save()
+
+        self.submission_rolled = None
+
+        state = self.get_state()
+        state.update({
+            'message': {
+                'message_text': 'Successfully graded user submission.',
+                'message_type': 'info'
+            }
+        })
+
+        return Response(json_body=state)
+
+    @XBlock.handler
+    def tenoutoften(self, request, suffix=''):
+
+        u = User.objects.get(id=25)
+
+        module = StudentModule.objects.get(
+            course_id=self.xmodule_runtime.course_id,
+            module_state_key=self.location,
+            student=u
+        )
+        state = json.loads(module.state)
+        state['score'] = 70.0
+        state['score_published'] = False
+        module.state = json.dumps(state)
+        module.save()
+
+        # self.score_published = False
+
+        print module
+
+        return Response(json_body={})
+
+    # Make it lazy getter and split to rolled_submission
+    def _get_submission(self, submission_id=0):
+
+        if submission_id is 0:
+            submission_id = self.submission
+
+        if submission_id in [None, 0]:
+            return None
+
+        try:
+            return Submission.objects.get(id=submission_id)
+        except Submission.DoesNotExist:
+            return None
 
 
-def render_template(template_path, context={}):
+def render_template(template_path, context=None):
     """
     Evaluate a template by resource path, applying the provided context
     """
+    if context is None:
+        context = {}
     template_str = load_resource(template_path)
     template = Template(template_str)
     return template.render(Context(context))
@@ -390,23 +508,3 @@ def resource_string(path):
     """Handy helper for getting resources from our kit."""
     data = pkg_resources.resource_string(__name__, path)
     return data.decode("utf8")
-
-
-def _now():
-    return datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
-
-
-def _file_storage_path(url, sha1, filename):
-    assert url.startswith("i4x://")
-    path = url[6:] + '/' + sha1
-    path += os.path.splitext(filename)[1]
-    return path
-
-
-def _get_sha1(file):
-    BLOCK_SIZE = 2**10 * 8  # 8kb
-    sha1 = hashlib.sha1()
-    for block in iter(partial(file.read, BLOCK_SIZE), ''):
-        sha1.update(block)
-    file.seek(0)
-    return sha1.hexdigest()
