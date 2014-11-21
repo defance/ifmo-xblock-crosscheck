@@ -45,17 +45,7 @@
             <% } %>
 
             <% if (uploaded && uploaded.approved) { %>
-                <% if (score && score.passed) { %>
-                    <div class="crosscheck-message">
-                        <h3>You received following reviews for your submission</h3>
-                        {% for review in reviews %}
-                            <div class="crosscheck-message">
-                                <p><b>Score:</b> {{ review.score }}</p>
-                                <p><b>Comment:</b> {{ review.comment|linebreaksbr }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                <% } else { %>
+                <% if (not score or not score.passed) { %>
                     <div class="crosscheck-message message-hint">
                         <p>You have approved your submission. It will be graded soon.</p>
                     </div>
@@ -127,6 +117,18 @@
                 </div>
              <% } %>
 
+        <% } %>
+
+        <% if (score && score.passed) { %>
+            <div class="crosscheck-message">
+                <h3>You received following reviews for your submission</h3>
+                {% for review in reviews %}
+                    <div class="crosscheck-message">
+                        <p><b>Score:</b> {{ review.score }}</p>
+                        <p><b>Comment:</b> {{ review.comment|linebreaksbr }}</p>
+                    </div>
+                {% endfor %}
+            </div>
         <% } %>
 
     </script>

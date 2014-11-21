@@ -5,7 +5,6 @@ import json
 import mimetypes
 import pkg_resources
 import pytz
-import random
 
 from courseware.models import StudentModule
 from django.contrib.auth.models import User
