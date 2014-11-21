@@ -45,7 +45,7 @@
             <% } %>
 
             <% if (uploaded && uploaded.approved) { %>
-                <% if (not score or not score.passed) { %>
+                <% if (!score || !score.passed) { %>
                     <div class="crosscheck-message message-hint">
                         <p>You have approved your submission. It will be graded soon.</p>
                     </div>
