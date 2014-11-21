@@ -23,7 +23,8 @@ def download(path, mimetype, filename):
     return Response(
         app_iter=app_iterator,
         content_type=mimetype,
-        content_disposition="attachment; filename=" + filename
+        # MAMA VIRVI MNE RUKI: utf-8 -> ascii -> latin1
+        content_disposition=u"attachment; filename=" + filename.encode('utf-8').decode('latin-1')
     )
 
 
