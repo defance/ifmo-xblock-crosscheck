@@ -121,13 +121,16 @@
 
         <% if (score && score.passed) { %>
             <div class="crosscheck-message">
-                <h3>You received following reviews for your submission</h3>
-                {% for review in reviews %}
-                    <div class="crosscheck-message">
-                        <p><b>Score:</b> {{ review.score }}</p>
-                        <p><b>Comment:</b> {{ review.comment|linebreaksbr }}</p>
-                    </div>
-                {% endfor %}
+                {% if reviews %}
+                    <h3>You received following reviews for your submission:</h3>
+                    {% for review in reviews %}
+                        <div class="crosscheck-message">
+                            <p><b>{{ review.peer_name }} &rarr;</b> {{ review.comment|linebreaksbr }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Your submission has been graded, but you have received no text reviews.</p>
+                {% endif %}
             </div>
         <% } %>
 

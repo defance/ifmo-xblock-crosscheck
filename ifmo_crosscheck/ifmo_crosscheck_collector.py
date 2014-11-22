@@ -171,11 +171,14 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
         return state
 
     def get_reviews(self):
+        all_reviews = Score.objects.values('score', 'comment').filter(submission=self._get_submission())
         return [
             {
-                'score': i['score'],
-                'comment': i['comment']
-            } for i in Score.objects.values('score', 'comment').filter(submission=self._get_submission())
+                'peer_name': u'Peer %s' % index,
+                # Keep score anonymous
+                # 'score': review['score'],
+                'comment': review['comment']
+            } for index, review in enumerate(all_reviews, start=1) if review['comment']
         ]
 
     @XBlock.handler
