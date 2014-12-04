@@ -1,2 +1,1 @@
-from .ifmo_crosscheck_collector import CrossCheckCollectorXBlock
-from .ifmo_crosscheck_grader import CrossCheckGraderXBlock
+from .crosscheck import CrossCheckXBlock

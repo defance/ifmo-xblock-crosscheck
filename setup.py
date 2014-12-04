@@ -32,8 +32,7 @@ setup(
     ],
     entry_points={
         'xblock.v1': [
-            'ifmo_crosscheck_collector = ifmo_crosscheck:CrossCheckCollectorXBlock',
-            'ifmo_crosscheck_grader = ifmo_crosscheck:CrossCheckGraderXBlock',
+            'ifmo_crosscheck_xblock = ifmo_crosscheck:CrossCheckXBlock',
         ]
     },
     package_data=package_data("ifmo_crosscheck", ["static", "public"]),

@@ -12,6 +12,7 @@ class Submission(models.Model):
     approved = models.BooleanField()
     course = models.CharField(max_length=255, db_index=True, default="")
     module = models.CharField(max_length=255, db_index=True, default="")
+    size = models.IntegerField(default=0)
 
 
 class Score(models.Model):

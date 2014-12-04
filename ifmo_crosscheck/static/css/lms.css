@@ -149,3 +149,52 @@
 .crosscheck-block .grade-form-message {
     display: none;
 }
+
+.crosscheck-block .block-status-container {
+    clear:  both;
+    margin-bottom: 20px;
+}
+
+.crosscheck-block .block-status-block {
+    border: 1px solid #aaa;
+    width: 100px;
+    border-radius: 15px;
+    height: 75px;
+    background-color: #f8f8f8;
+    float: left;
+    margin-right: 10px;
+}
+
+.crosscheck-block .block-status-passed {
+    background: #ccc;
+}
+
+.crosscheck-block .block-status-active {
+    background: lightgreen;
+}
+
+.crosscheck-block .block-status-common {
+    /* border-top: 15px; */
+    border-radius: 15px 15px 0 0;
+    border-bottom: 1px solid #aaa;
+    height: 15px;
+}
+
+.crosscheck-block .block-status-text {
+    /* margin: auto auto; */
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle;
+    height: 75px;
+    padding-top: 7px;
+    width: 100px;
+}
+
+.crosscheck-block .block-arrow-container {
+    float: left;
+    margin-right: 10px;
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle;
+    padding-top: 30px;
+}

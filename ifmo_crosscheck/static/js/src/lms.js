@@ -160,6 +160,8 @@ function CrossCheckXBlockShow(runtime, element) {
                 }
             }
 
+            $('.instructor-info-action').leanModal();
+
         }
 
         function disable_controllers(context) {

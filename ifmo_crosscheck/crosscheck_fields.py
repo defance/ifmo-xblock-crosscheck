@@ -93,3 +93,17 @@ class CrosscheckXBlockFields(object):
         help="These criteria will be shown to peer when grading one's submission.",
         scope=Scope.settings
     )
+
+    allowed_extensions = String(
+        display_name="Allowed file extensions",
+        default='',
+        help="Comma separated allowed extensions. If empty - no file restrictions are used. Example: <em>jpg,png</em>",
+        scope=Scope.settings
+    )
+
+    allowed_file_size = Integer(
+        display_name="Allowed file extensions",
+        default=0,
+        help="Allowed file size (in bytes). If 0 - no file restrictions are used.",
+        scope=Scope.settings
+    )

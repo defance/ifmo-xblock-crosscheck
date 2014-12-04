@@ -23,7 +23,7 @@ from .crosscheck_fields import CrosscheckXBlockFields
 from .utils import CrosscheckSettingsSaveException, ValidationException, download, get_sha1, file_storage_path, now
 
 
-class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
+class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
 
     has_score = True
     always_recalculate_grades = True
@@ -48,7 +48,9 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
         ('points', 'float'),
         ('grades_required', 'int'),
         ('collection_due', 'datetime'),
-        ('is_grading_debug', 'string')
+        ('allowed_extensions', 'string'),
+        ('allowed_file_size', 'int'),
+        ('is_grading_debug', 'string'),
     )
 
     def max_score(self):
@@ -141,6 +143,7 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
         submission = self._get_submission()
 
         state = {
+            'id': self.location.name.replace('.', '_'),
             'location': unicode(self.location),
             'is_upload_allowed': self._upload_allowed(),
             'is_grading_allowed': self._grading_allowed(),
@@ -154,6 +157,7 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
                 'filename': submission.filename,
                 'timestamp': self._datetime_to_str(submission.modified),
                 'sha1': submission.sha_1,
+                'size': submission.size,
                 'approved': submission.approved
             }})
 
@@ -184,9 +188,32 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
     @XBlock.handler
     def upload_assignment(self, request, suffix=''):
 
+        def get_response(msg=None):
+            msg = {} if msg is None else msg
+            return_state = self.get_state()
+            if msg:
+                return_state.update({'message': msg})
+            return Response(json_body=return_state)
+
         assert self._upload_allowed()
 
         upload = request.params['assignment']
+        uploaded_file = File(upload.file)
+
+        if self.allowed_extensions:
+            if not any([upload.file.name.endswith(i) for i in self.allowed_extensions.split(',')]):
+                return get_response({
+                    "message_text": "File extension is not allowed. Allowed extension: <em>%s</em>." %
+                                    ', '.join(self.allowed_extensions.split(',')),
+                    "message_type": "error"
+                })
+
+        if self.allowed_file_size:
+            if upload.file.size > self.allowed_file_size:
+                return get_response({
+                    "message_text": "You file is too big. Allowed file size is %sb." % self.allowed_file_size,
+                    "message_type": "error"
+                })
 
         # Do cleanup first
         old_submission = self._get_submission()
@@ -205,7 +232,8 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
             mimetype=mimetypes.guess_type(upload.file.name)[0],
             sha_1=get_sha1(upload.file),
             course=unicode(self.course_id),
-            module=unicode(self.location)
+            module=unicode(self.location),
+            size=uploaded_file.size
         )
 
         self.submission = submission.id
@@ -217,16 +245,12 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
         )
 
         if not default_storage.exists(path):
-            default_storage.save(path, File(upload.file))
+            default_storage.save(path, uploaded_file)
 
-        state = self.get_state()
-        message = {
+        return get_response({
             "message_text": "You submission is successfully uploaded.",
             "message_type": "info"
-        }
-        state.update({"message": message})
-
-        return Response(json_body=state)
+        })
 
     @XBlock.handler
     def approve_assignment(self, request, suffix=''):
@@ -328,12 +352,22 @@ class CrossCheckCollectorXBlock(CrosscheckXBlockFields, XBlock):
     def _validate_collection_due(self, a):
         """If collection due is ok, return it otherwise throw exception."""
 
+        return a
+
+        # If date has not changed -- skip any check
+        if self.collection_due == a:
+            return a
+
         # Collection due that took place in past can be moved anywhere in past
-        if self.collection_due is not None and self.collection_due < now():
+        if self.collection_due is not None and self.collection_due < now() and a < now():
+            return a
+
+        # No need to validate if both dues were in past
+        if self.collection_due < now() and a < now():
             return a
 
         if not a > now():
-            raise ValidationException("Collection due must take place in future")
+            raise ValidationException("Collection due must take place in future (now=%s)" % now())
 
         # if not a > self.start:
         #    raise ValidationException("Collection due must take place after course start")

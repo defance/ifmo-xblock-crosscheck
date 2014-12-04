@@ -4,15 +4,60 @@
 
     <div class="problem-progress"></div>
 
+    <div class="block-status-container">
+        {% if is_upload_allowed %}
+            <div class="block-status-block">
+                <div class="block-status-common block-status-active">
+                    <p class="block-status-text">
+                        Collection phase
+                    </p>
+                </div>
+            </div>
+        {% else %}
+            <div class="block-status-block">
+                <div class="block-status-common block-status-passed">
+                    <p class="block-status-text">
+                        Collection phase
+                    </p>
+                </div>
+            </div>
+            <div class="block-arrow-container">&rarr;</div>
+            {% if is_grading_allowed %}
+                <div class="block-status-block">
+                    <div class="block-status-common block-status-active">
+                        <p class="block-status-text">
+                            Grading phase
+                        </p>
+                    </div>
+                </div>
+            {% else %}
+                <div class="block-status-block">
+                    <div class="block-status-common block-status-passed">
+                        <p class="block-status-text">
+                            Grading phase
+                        </p>
+                    </div>
+                </div>
+                <div class="block-arrow-container">&rarr;</div>
+                <div class="block-status-block">
+                    <div class="block-status-common block-status-active">
+                        <p class="block-status-text">
+                            Due
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+        <div style="clear: both"></div>
+    </div>
+
     <div class="task_text">
         {{ task.text|safe }}
     </div>
 
-    <div class="crosscheck-message">
-        <pre>{{state}}</pre>
-    </div>
-
     <script type="text/template" id="crosscheck-template">
+
+
 
         <% if (message) { %>
             <div class="crosscheck-message message-<%= message.message_type %>">
@@ -23,7 +68,9 @@
         <% if (uploaded) { %>
             <div class="file-info">
                 You have uploaded the following file: <br/>
-                File name: <b><a href="<%= uploaded.url %>"><%= uploaded.filename %></a></b>
+                File name: <b><a href="<%= uploaded.url %>"><%= uploaded.filename %></a></b><br/>
+                Upload time: <b><%= uploaded.timestamp %></b><br/>
+                Size: <b><%= uploaded.size %>b</b><br/>
             </div>
         <% } %>
 
@@ -151,5 +198,37 @@
     </script>
 
     <div id="crosscheck-content"></div>
+
+    {% if is_staff %}
+    <div class="wrap-instructor-info">
+        <a class="instructor-info-action" href="#{{ id }}-debug-modal" id="{{id}}-debug-button">Show debug info</a>
+        <a class="instructor-info-action" href="#{{ id }}-staff-modal" id="{{id}}staff-button">Show staff info</a>
+    </div>
+    {% endif %}
+
+    {% if is_staff %}
+    <section aria-hidden="true" class="modal staff-modal" id="{{ id }}-debug-modal" style="width: 800px">
+        <div class="inner-wrapper" style="color: black">
+            <header><h2>State</h2></header>
+            <br/>
+            <div id="debug-info">
+                <p>Your current state is below. State for specific student comes here soon. Whenever.</p>
+                <div class="crosscheck-message">
+                    <pre>{{state}}</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section aria-hidden="true" class="modal staff-modal" id="{{ id }}-staff-modal" style="width: 1000px">
+        <div class="inner-wrapper" style="color: black">
+            <header><h2>Staff info</h2></header>
+            <br/>
+            <div id="staff-info">
+                <p>Staff info</p>
+            </div>
+        </div>
+    </section>
+    {% endif %}
 
 </div>
