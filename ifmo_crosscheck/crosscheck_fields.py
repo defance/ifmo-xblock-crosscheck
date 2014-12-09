@@ -7,7 +7,7 @@ from xblock.fields import Scope, Integer, String, Float, Boolean, DateTime
 class CrosscheckXBlockFields(object):
 
     display_name = String(
-        default='[Crosscheck] Collector',
+        default='Crosscheck Assignment',
         help="This name appears in the horizontal navigation at the top of "
              "the page.",
         scope=Scope.settings
