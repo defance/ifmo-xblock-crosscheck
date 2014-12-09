@@ -21,8 +21,8 @@ def package_data(pkg, roots):
 
 
 setup(
-    name='ifmo-crosscheck-xblock',
-    version='0.1',
+    name='ifmo-xblock-crosscheck',
+    version='0.2',
     description='ifmo_xblock_crosscheck XBlock',   # TODO: write a better description.
     packages=[
         'ifmo_crosscheck',
@@ -32,7 +32,8 @@ setup(
     ],
     entry_points={
         'xblock.v1': [
-            'ifmo_crosscheck_xblock = ifmo_crosscheck:CrossCheckXBlock',
+            'ifmo_crosscheck_xblock = ifmo_crosscheck:CrossCheckXBlock', # absolete
+            'ifmo_xblock_crosscheck = ifmo_crosscheck:CrossCheckXBlock',
         ]
     },
     package_data=package_data("ifmo_crosscheck", ["static", "public"]),
