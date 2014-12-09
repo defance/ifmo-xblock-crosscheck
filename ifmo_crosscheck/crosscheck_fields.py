@@ -66,13 +66,6 @@ class CrosscheckXBlockFields(object):
         help="Link to module"
     )
 
-    is_grading_debug = String(
-        display_name="Is grading phase",
-        scope=Scope.settings,
-        default=None,
-        help="Debug value"
-    )
-
     grades_required = Integer(
         display_name="Grades required",
         scope=Scope.settings,

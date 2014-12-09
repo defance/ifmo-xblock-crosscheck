@@ -50,7 +50,6 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
         ('collection_due', 'datetime'),
         ('allowed_extensions', 'string'),
         ('allowed_file_size', 'int'),
-        ('is_grading_debug', 'string'),
     )
 
     def max_score(self):
@@ -385,13 +384,9 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
         return self._is_grading_step()
 
     def _is_collection_step(self):
-        if self.is_grading_debug == 'True':
-            return False
         return now() < self.collection_due if self.collection_due else True
 
     def _is_grading_step(self):
-        if self.is_grading_debug == 'True':
-            return True
         return not self.past_due() and now() > self.collection_due
 
     def is_course_staff(self):
