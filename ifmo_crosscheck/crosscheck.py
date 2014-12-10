@@ -185,6 +185,31 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
         ]
 
     @XBlock.handler
+    def staff_info(self, request, suffix=''):
+
+        assert self.is_course_staff()
+
+        all_submissions = Submission.objects.filter(module=self.location)
+
+        response = {
+            'location': unicode(self.location),
+            'summary': {
+                'total': all_submissions.count(),
+                'approved': all_submissions.filter(approved=True).count()
+            },
+            'submissions': list(all_submissions.annotate(
+                num_scores=Count('score')
+            ).values_list(
+                'user__username', 'num_scores', 'approved'
+            )),
+            'score': {
+                'need_grades': self.grades_required
+            }
+        }
+
+        return Response(json_body=response)
+
+    @XBlock.handler
     def upload_assignment(self, request, suffix=''):
 
         def get_response(msg=None):

@@ -1,4 +1,4 @@
-<div class="crosscheck-block" id="crosscheck-block" data-state="{{ state }}" data-max_score="{{ max_score }}">
+<div class="crosscheck-block" id="crosscheck-block" data-state="{{ state }}" data-max_score="{{ max_score }}" {% if is_staff %}data-is-staff="{{ is_staff }}"{% endif %}>
 
     <h2 class="problem-header">{{ display_name }}</h2>
 
@@ -56,8 +56,6 @@
     </div>
 
     <script type="text/template" id="crosscheck-template">
-
-
 
         <% if (message) { %>
             <div class="crosscheck-message message-<%= message.message_type %>">
@@ -202,7 +200,7 @@
     {% if is_staff %}
     <div class="wrap-instructor-info">
         <a class="instructor-info-action" href="#{{ id }}-debug-modal" id="{{id}}-debug-button">Show debug info</a>
-        <a class="instructor-info-action" href="#{{ id }}-staff-modal" id="{{id}}staff-button">Show staff info</a>
+        <a class="instructor-info-action instructor-info-action-info" href="#{{ id }}-staff-modal" id="{{id}}-staff-button">Show staff info</a>
     </div>
     {% endif %}
 
@@ -225,10 +223,42 @@
             <header><h2>Staff info</h2></header>
             <br/>
             <div id="staff-info">
-                <p>Staff info</p>
+                <p>Please wait while data is loading...</p>
             </div>
         </div>
     </section>
+    {% endif %}
+
+    {% if is_staff %}
+    <script type="text/template" id="crosscheck-staff-info">
+        <h2>Summary</h2>
+        <table class="crosscheck-staff-info-summary-table">
+            <tr><th class="crosscheck-staff-info-summary-th">Total submissions:</th><td><%= summary.total %></td></tr>
+            <tr><th class="crosscheck-staff-info-summary-th">Approved:</th><td><%= summary.approved %></td></tr>
+            <tr><th class="crosscheck-staff-info-summary-th">Grades needed:</th><td><%= score.need_grades %></td></tr>
+        </table>
+        <h2>Submissions</h2>
+            <% if (!submissions.length) { %>
+                <p>No submissions have been made.</p>
+            <% } else { %>
+                <table class="crosscheck-staff-info-submissions-table">
+                    <tr class="crosscheck-staff-info-submissions-tr">
+                        <th class="crosscheck-staff-info-submissions-th">Username</th>
+                        <th class="crosscheck-staff-info-submissions-th">Num of scores</th>
+                        <th class="crosscheck-staff-info-submissions-th">Approved?</th>
+                    </tr>
+                    <% _.each(submissions, function(submission) { %>
+                        <% row_class = 'crosscheck-staff-info-submissions-tr' %>
+                        <% if (submission[2] == false) { row_class += ' crosscheck-staff-info-submissions-tr-error'; } %>
+                        <tr class="<%= row_class %>">
+                            <td class="crosscheck-staff-info-submissions-td"><%= submission[0] %></td>
+                            <td class="crosscheck-staff-info-submissions-td"><%= submission[1] %></td>
+                            <td class="crosscheck-staff-info-submissions-td"><%= submission[2] %></td>
+                        </tr>
+                    <% }); %>
+                </table>
+            <% } %>
+    </script>
     {% endif %}
 
 </div>

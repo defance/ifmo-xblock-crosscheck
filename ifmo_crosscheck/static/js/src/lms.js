@@ -1,4 +1,5 @@
-function CrossCheckXBlockShow(runtime, element) {
+function CrossCheckXBlockShow(runtime, element)
+{
 
     function xblock($, _)
     {
@@ -8,6 +9,8 @@ function CrossCheckXBlockShow(runtime, element) {
         var rollUrl = runtime.handlerUrl(element, 'roll_submission');
         var gradeUrl = runtime.handlerUrl(element, 'grade');
         var rolledUrl = runtime.handlerUrl(element, 'download_rolled');
+
+        var staffInfoUrl = runtime.handlerUrl(element, 'staff_info');
 
         var get_template = function(tmpl){
             return _.template($(element).find(tmpl).text());
@@ -31,12 +34,16 @@ function CrossCheckXBlockShow(runtime, element) {
             },
             common: {
                 file_info: get_template("#crosscheck-file-info"),
-            message: get_template("#crosscheck-message")
+                message: get_template("#crosscheck-message")
+            },
+            staff: {
+                info: get_template("#crosscheck-staff-info")
             }
         };
 
 
-        function render_new(state) {
+        function render_new(state)
+        {
 
             state.message = state.message ? state.message : false;
             state.uploaded = state.uploaded ? state.uploaded : false;
@@ -160,11 +167,15 @@ function CrossCheckXBlockShow(runtime, element) {
                 }
             }
 
-            $('.instructor-info-action').leanModal();
-
         }
 
-        function disable_controllers(context) {
+        function renderStaffInfo(data)
+        {
+            $(element).find('#staff-info').html(template.staff.info(data)).data(data);
+        }
+
+        function disable_controllers(context)
+        {
             $(context).find(".controllers").find("button").toggleClass('disabled').attr("disabled", "disabled");
         }
 
@@ -172,6 +183,17 @@ function CrossCheckXBlockShow(runtime, element) {
 
             var block = $(element).find(".crosscheck-block");
             var state = block.attr("data-state");
+
+            var is_staff = block.attr("data-is-staff") == "True";
+            if (is_staff) {
+                $('.instructor-info-action').leanModal();
+                $('.instructor-info-action-info').leanModal().on('click', function(){
+                    $.ajax({
+                        url: staffInfoUrl,
+                        success: renderStaffInfo
+                    });
+                });
+            }
 
             render_new(JSON.parse(state));
         });

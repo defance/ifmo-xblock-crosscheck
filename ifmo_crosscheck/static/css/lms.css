@@ -198,3 +198,51 @@
     vertical-align: middle;
     padding-top: 30px;
 }
+
+/*====================================================================================================================*/
+
+/*
+ * Summary table on staff info modal
+ */
+
+.crosscheck-staff-info-summary-table {
+    margin: 20px 0;
+}
+
+.crosscheck-staff-info-summary-th {
+    width: 200px;
+}
+
+.crosscheck-staff-info-summary-td {
+
+}
+
+/*====================================================================================================================*/
+
+/*
+ * Submissions table on staff info modal
+ */
+
+.crosscheck-staff-info-submissions-table {
+    width: 100%;
+}
+
+.crosscheck-staff-info-submissions-tr {
+    width: 200px;
+}
+
+.crosscheck-staff-info-submissions-tr-error {
+    background-color: #ffc0c0;
+}
+
+.crosscheck-staff-info-submissions-th {
+    text-align: center;
+}
+
+.crosscheck-staff-info-submissions-td {
+    padding: 5px;
+    text-align: center;
+    border-top: 1px solid lightgray;
+}
+
+/*====================================================================================================================*/
