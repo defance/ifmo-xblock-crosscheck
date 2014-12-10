@@ -249,7 +249,7 @@
                     </tr>
                     <% _.each(submissions, function(submission) { %>
                         <% row_class = 'crosscheck-staff-info-submissions-tr' %>
-                        <% if (submission[2] == false) { row_class += ' crosscheck-staff-info-submissions-tr-error'; } %>
+                        <% if (submission[2] && submission[1] < score.need_grades) { row_class += ' crosscheck-staff-info-submissions-tr-error'; } %>
                         <tr class="<%= row_class %>">
                             <td class="crosscheck-staff-info-submissions-td"><%= submission[0] %></td>
                             <td class="crosscheck-staff-info-submissions-td"><%= submission[1] %></td>
