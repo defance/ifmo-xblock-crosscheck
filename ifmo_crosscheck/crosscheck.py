@@ -504,28 +504,6 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
 
         return Response(json_body=state)
 
-    @XBlock.handler
-    def tenoutoften(self, request, suffix=''):
-
-        u = User.objects.get(id=25)
-
-        module = StudentModule.objects.get(
-            course_id=self.xmodule_runtime.course_id,
-            module_state_key=self.location,
-            student=u
-        )
-        state = json.loads(module.state)
-        state['score'] = 70.0
-        state['score_published'] = False
-        module.state = json.dumps(state)
-        module.save()
-
-        # self.score_published = False
-
-        print module
-
-        return Response(json_body={})
-
     # Make it lazy getter and split to rolled_submission
     def _get_submission(self, submission_id=0):
 
