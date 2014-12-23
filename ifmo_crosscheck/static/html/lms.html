@@ -1,7 +1,6 @@
 <div class="crosscheck-block" id="crosscheck-block" data-state="{{ state }}" data-max_score="{{ max_score }}" {% if is_staff %}data-is-staff="{{ is_staff }}"{% endif %}>
 
     <h2 class="problem-header">{{ display_name }}</h2>
-
     <div class="problem-progress"></div>
 
     <div class="block-status-container">
@@ -243,17 +242,23 @@
             <% } else { %>
                 <table class="crosscheck-staff-info-submissions-table">
                     <tr class="crosscheck-staff-info-submissions-tr">
+                        <!--<th class="crosscheck-staff-info-submissions-th">id</th>-->
+                        <!--<th class="crosscheck-staff-info-submissions-th">User ID</th>-->
                         <th class="crosscheck-staff-info-submissions-th">Username</th>
-                        <th class="crosscheck-staff-info-submissions-th">Num of scores</th>
+                        <th class="crosscheck-staff-info-submissions-th">Scores <span class="crosscheck-staff-help crosscheck-staff-help-sub">(Количество оценок, которое получила работа)</span></th>
+                        <th class="crosscheck-staff-info-submissions-th">Scores by author <span class="crosscheck-staff-help crosscheck-staff-help-sub">(Количество оценок, которое поставил автор другим работам)</span></th>
                         <th class="crosscheck-staff-info-submissions-th">Approved?</th>
                     </tr>
                     <% _.each(submissions, function(submission) { %>
                         <% row_class = 'crosscheck-staff-info-submissions-tr' %>
-                        <% if (submission[2] && submission[1] < score.need_grades) { row_class += ' crosscheck-staff-info-submissions-tr-error'; } %>
+                        <% if (submission.approved && submission.num_scores < score.need_grades) { row_class += ' crosscheck-staff-info-submissions-tr-error'; } %>
                         <tr class="<%= row_class %>">
-                            <td class="crosscheck-staff-info-submissions-td"><%= submission[0] %></td>
-                            <td class="crosscheck-staff-info-submissions-td"><%= submission[1] %></td>
-                            <td class="crosscheck-staff-info-submissions-td"><%= submission[2] %></td>
+                            <!--<td class="crosscheck-staff-info-submissions-td"><%= submission.id %></td>-->
+                            <!--<td class="crosscheck-staff-info-submissions-td"><%= submission.user__id %></td>-->
+                            <td class="crosscheck-staff-info-submissions-td"><%= submission.user__username %></td>
+                            <td class="crosscheck-staff-info-submissions-td"><%= submission.num_scores %></td>
+                            <td class="crosscheck-staff-info-submissions-td"><%= submission.num_scores_by_user %></td>
+                            <td class="crosscheck-staff-info-submissions-td"><%= submission.approved %></td>
                         </tr>
                     <% }); %>
                 </table>

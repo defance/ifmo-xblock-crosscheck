@@ -10,7 +10,8 @@ from courseware.models import StudentModule
 from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.files.storage import default_storage
-from django.db.models import Avg, Count, Q
+from django.db.models import Q
+from aggregate_if import Avg, Count
 from django.template import Context, Template
 from webob.exc import HTTPNotFound
 from webob.response import Response
@@ -198,9 +199,11 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
                 'approved': all_submissions.filter(approved=True).count()
             },
             'submissions': list(all_submissions.annotate(
+                num_scores_by_user=Count('user__score', only=Q(user__score__submission__module=self.location))
+            ).annotate(
                 num_scores=Count('score')
-            ).values_list(
-                'user__username', 'num_scores', 'approved'
+            ).values(
+                'id', 'user__username', 'user__id', 'num_scores', 'num_scores_by_user', 'approved'
             )),
             'score': {
                 'need_grades': self.grades_required
@@ -535,10 +538,12 @@ def load_resource(resource_path):
     Gets the content of a resource
     """
     resource_content = pkg_resources.resource_string(__name__, resource_path)
-    return unicode(resource_content)
+    return resource_content
+    # return unicode(resource_content)
 
 
 def resource_string(path):
     """Handy helper for getting resources from our kit."""
     data = pkg_resources.resource_string(__name__, path)
-    return data.decode("utf8")
+    return data
+    # return data.decode("utf8")
