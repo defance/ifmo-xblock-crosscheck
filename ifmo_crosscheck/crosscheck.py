@@ -239,7 +239,7 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
         if self.allowed_file_size:
             if upload.file.size > self.allowed_file_size:
                 return get_response({
-                    "message_text": "You file is too big. Allowed file size is %sb." %
+                    "message_text": "You file is too big. Allowed file size is %s." %
                                     human_size(self.allowed_file_size),
                     "message_type": "error"
                 })

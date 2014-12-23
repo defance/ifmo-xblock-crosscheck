@@ -5,7 +5,7 @@
 
     <div class="block-status-container">
         {% if is_upload_allowed %}
-            <div class="block-status-block">
+            <div class="    block-status-block">
                 <div class="block-status-common block-status-active">
                     <p class="block-status-text">
                         Collection phase
@@ -67,7 +67,7 @@
                 You have uploaded the following file: <br/>
                 File name: <b><a href="<%= uploaded.url %>"><%= uploaded.filename %></a></b><br/>
                 Upload time: <b><%= uploaded.timestamp %></b><br/>
-                Size: <b><%= uploaded.size.fileSize() %>b</b><br/>
+                Size: <b><%= uploaded.size.fileSize() %></b><br/>
             </div>
         <% } %>
 
