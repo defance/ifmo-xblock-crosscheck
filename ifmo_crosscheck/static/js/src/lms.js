@@ -161,7 +161,7 @@ function CrossCheckXBlockShow(runtime, element)
 
             if(state.score) {
                 if (state.score.passed) {
-                    $('.problem-progress').text('(' + state.score.score + '/' + state.score.total + ' points possible)');
+                    $('.problem-progress').text('(' + (Math.round(state.score.score * 100) / 100)  + '/' + state.score.total + ' points possible)');
                 } else {
                     $('.problem-progress').text('(' + state.score.total + ' points possible)');
                 }
