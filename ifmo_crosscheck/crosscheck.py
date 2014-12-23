@@ -21,7 +21,8 @@ from xmodule.util.duedate import get_extended_due_date
 
 from .models import Score, Submission
 from .crosscheck_fields import CrosscheckXBlockFields
-from .utils import CrosscheckSettingsSaveException, ValidationException, download, get_sha1, file_storage_path, now
+from .utils import CrosscheckSettingsSaveException, ValidationException, download, get_sha1, file_storage_path, now, \
+    human_size
 
 
 class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
@@ -230,7 +231,7 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
         if self.allowed_extensions:
             if not any([upload.file.name.endswith(i) for i in self.allowed_extensions.split(',')]):
                 return get_response({
-                    "message_text": "File extension is not allowed. Allowed extension: <em>%s</em>." %
+                    "message_text": "File extension is not allowed. Allowed extension: %s." %
                                     ', '.join(self.allowed_extensions.split(',')),
                     "message_type": "error"
                 })
@@ -238,7 +239,8 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
         if self.allowed_file_size:
             if upload.file.size > self.allowed_file_size:
                 return get_response({
-                    "message_text": "You file is too big. Allowed file size is %sb." % self.allowed_file_size,
+                    "message_text": "You file is too big. Allowed file size is %sb." %
+                                    human_size(self.allowed_file_size),
                     "message_type": "error"
                 })
 

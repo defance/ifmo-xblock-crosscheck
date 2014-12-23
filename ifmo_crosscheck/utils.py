@@ -1,5 +1,6 @@
 import hashlib
 import datetime
+import math
 import os
 import pytz
 
@@ -46,3 +47,12 @@ def file_storage_path(url, sha1, filename):
 
 def now():
     return datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
+
+
+def human_size(num_bytes):
+    suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+    rank = int((math.log10(num_bytes)) / 3)
+    rank = min(rank, len(suffixes) - 1)
+    human = num_bytes / (1024.0 ** rank)
+    f = ('%.2f' % human).rstrip('0').rstrip('.')
+    return '%s %s' % (f, suffixes[rank])
