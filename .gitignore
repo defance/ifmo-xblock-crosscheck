@@ -1,0 +1,12 @@
+# Installation artifacts
+*.egg-info
+
+# Python artifacts
+*.pyc
+
+# Editor atifacts
+*~
+*.swp
+*.orig
+/nbproject
+.idea/
