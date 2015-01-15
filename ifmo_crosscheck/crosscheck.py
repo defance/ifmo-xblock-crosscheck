@@ -191,21 +191,39 @@ class CrossCheckXBlock(CrosscheckXBlockFields, XBlock):
 
         assert self.is_course_staff()
 
-        all_submissions = Submission.objects.filter(module=self.location)
+        submissions_all = Submission.objects.filter(module=self.location)
+
+        # We need 2 separated annotations due to bug
+        # https://code.djangoproject.com/ticket/10060
+
+        # Number of scores received by this submission
+        submissions_num_scores = submissions_all.annotate(
+            num_scores=Count('score')
+        ).values(
+            'id', 'user__username', 'user__id', 'num_scores', 'approved'
+        )
+
+        # Number of scores done by this submission author
+        submissions_num_scores_by_user = submissions_all.annotate(
+            num_scores_by_user=Count('user__score', only=Q(user__score__submission__module=self.location))
+        ).values()
+
+        # Create map of submissions from all submissions: id => row
+        submission_map = dict()
+        for submission in submissions_num_scores:
+            submission_map[submission['id']] = submission
+
+        # Update map with num_scores_by_user (second annotate)
+        for submission in submissions_num_scores_by_user:
+            submission_map[submission['id']]['num_scores_by_user'] = submission['num_scores_by_user']
 
         response = {
             'location': unicode(self.location),
             'summary': {
-                'total': all_submissions.count(),
-                'approved': all_submissions.filter(approved=True).count()
+                'total': submissions_all.count(),
+                'approved': submissions_all.filter(approved=True).count()
             },
-            'submissions': list(all_submissions.annotate(
-                num_scores_by_user=Count('user__score', only=Q(user__score__submission__module=self.location))
-            ).annotate(
-                num_scores=Count('score')
-            ).values(
-                'id', 'user__username', 'user__id', 'num_scores', 'num_scores_by_user', 'approved'
-            )),
+            'submissions': submission_map.values(),
             'score': {
                 'need_grades': self.grades_required
             }
